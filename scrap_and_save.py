@@ -22,7 +22,7 @@ def scrape_research_papers(disease, num_papers=50):
     links = []
     
     # Create the search query
-    search_query = f"{disease} treatment research"
+    search_query = f"{disease}"
     
     try:
         # Search for papers
@@ -36,20 +36,26 @@ def scrape_research_papers(disease, num_papers=50):
             try:
                 # Get next paper
                 paper = next(search_results)
+                # print(paper)
                 
                 # Fill paper details
-                title = paper.get('title', 'No title available')
-                abstract = paper.get('abstract', 'No abstract available')
-                link = paper.get('url', 'No link available')
+                # title = paper.get('title', 'No title available')
+                # abstract = paper.get('abstract', 'No abstract available')
+                # link = paper.get('url', 'No link available')
                 
+                title = paper['bib']['title']
+                abstract = paper['bib']['abstract']
+                link = paper['pub_url']
+                print(title)
+
                 # Only add papers that have abstracts
-                if abstract != 'No abstract available':
-                    titles.append(title)
-                    abstracts.append(abstract)
-                    links.append(link)
+                # if disease in abstract:
+                titles.append(title)
+                abstracts.append(abstract)
+                links.append(link)
                     
-                    # Update progress bar
-                    pbar.update(1)
+                # Update progress bar
+                pbar.update(1)
                 
                 # Add delay to avoid overwhelming the server
                 time.sleep(2)
@@ -94,6 +100,7 @@ def extract_disease_verbs(text, disease):
     list: List of verbs associated with the disease
     """
     # Load English language model
+
     nlp = spacy.load("en_core_web_sm")
     
     # Process the text
