@@ -4,6 +4,44 @@ import time
 from tqdm import tqdm
 import spacy
 import re
+import json
+from io import StringIO
+from contextlib import redirect_stdout
+
+def capture_output_contextlib(func, *args, **kwargs):
+    # Create a StringIO object to capture the output
+    output_buffer = StringIO()
+    
+    # Use the context manager to redirect stdout
+    with redirect_stdout(output_buffer):
+        func(*args, **kwargs)
+    
+    # Get the output and close the buffer
+    output = output_buffer.getvalue()
+    output_buffer.close()
+    return output
+
+
+def clean_json_string(json_str):
+    # Step 1: Fix the line breaks in the abstract
+    # Find the abstract portion and join it properly
+    pattern = r'"abstract": "(.*?)",'  # Pattern to match the abstract content
+    abstract_content = re.search(pattern, json_str, re.DOTALL)
+    if abstract_content:
+        # Get the abstract text
+        abstract_text = abstract_content.group(1)
+        # Clean up the text by removing newlines and extra spaces
+        cleaned_abstract = ' '.join(
+            line.strip() 
+            for line in abstract_text.split('\n')
+        ).strip()
+        # Replace the original abstract with cleaned version
+        json_str = re.sub(pattern, f'"abstract": "{cleaned_abstract}",', json_str, flags=re.DOTALL)
+    
+    # Step 2: Fix any remaining line breaks in the entire string
+    json_str = json_str.replace('\n', '')
+    
+    return json_str
 
 def scrape_research_papers(disease, num_papers=50):
     """
@@ -22,10 +60,11 @@ def scrape_research_papers(disease, num_papers=50):
     links = []
     
     # Create the search query
-    search_query = f"{disease}"
+    search_query = f"{disease} treatment"
     
     try:
         # Search for papers
+        print(f"Searching for papers on {search_query}...")
         search_results = scholarly.search_pubs(search_query)
         
         # Initialize progress bar
@@ -36,26 +75,32 @@ def scrape_research_papers(disease, num_papers=50):
             try:
                 # Get next paper
                 paper = next(search_results)
-                # print(paper)
-                
+                json_output = capture_output_contextlib(scholarly.pprint, paper)
+                # print(json_output[2:-2].replace("'", """\""""))
+                # result = json.dumps(json_output[2:-2].replace('\n', ""))
+                cleaned_json_str = clean_json_string(json_output[2:-2].replace("'", """\""""))
+                print(cleaned_json_str)
+                result = json.loads("'"+cleaned_json_str+"'")
+
                 # Fill paper details
                 # title = paper.get('title', 'No title available')
                 # abstract = paper.get('abstract', 'No abstract available')
                 # link = paper.get('url', 'No link available')
                 
-                title = paper['bib']['title']
-                abstract = paper['bib']['abstract']
-                link = paper['pub_url']
-                print(title)
+                title = result['bib']['title']
+                abstract = result['bib']['abstract']
+                # # # clean_abstract({'abstract': abstract})
+                link = result['pub_url']
+                print((paper.get('title')))
 
                 # Only add papers that have abstracts
-                # if disease in abstract:
-                titles.append(title)
-                abstracts.append(abstract)
-                links.append(link)
-                    
-                # Update progress bar
-                pbar.update(1)
+                if disease in abstract:
+                    titles.append(title)
+                    abstracts.append(abstract)
+                    links.append(link)
+                        
+                    # Update progress bar
+                    pbar.update(1)
                 
                 # Add delay to avoid overwhelming the server
                 time.sleep(2)
@@ -124,7 +169,7 @@ if __name__ == "__main__":
     disease_name = "glioblastoma"
     
     # Scrape the papers
-    df = scrape_research_papers(disease_name, num_papers=10)
+    df = scrape_research_papers(disease_name, num_papers=150)
     
     # If you want to add verb extraction (optional)
     if df is not None:
