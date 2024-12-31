@@ -7,6 +7,8 @@ import re
 import json
 from io import StringIO
 from contextlib import redirect_stdout
+from datetime import datetime
+import ast
 
 def capture_output_contextlib(func, *args, **kwargs):
     # Create a StringIO object to capture the output
@@ -21,6 +23,30 @@ def capture_output_contextlib(func, *args, **kwargs):
     output_buffer.close()
     return output
 
+def convert_string_to_dict(input_string):
+    """
+    Converts a string representation of a Python dictionary to an actual dictionary/JSON
+    
+    Args:
+        input_string (str): String representation of a Python dictionary
+        
+    Returns:
+        dict: Parsed dictionary
+    """
+    try:
+        # First try to safely evaluate the string as a Python literal
+        python_dict = ast.literal_eval(input_string)
+        
+        # Convert to JSON-compatible format
+        json_string = json.dumps(python_dict, indent=2)
+        
+        # Parse back to dictionary (this ensures JSON compatibility)
+        parsed_dict = json.loads(json_string)
+        
+        return parsed_dict
+    except (SyntaxError, ValueError) as e:
+        print(f"Error parsing string: {e}")
+        return None
 
 def clean_json_string(json_str):
     # Step 1: Fix the line breaks in the abstract
@@ -40,6 +66,7 @@ def clean_json_string(json_str):
     
     # Step 2: Fix any remaining line breaks in the entire string
     json_str = json_str.replace('\n', '')
+    json_str = json_str.replace("'", '"')
     
     return json_str
 
@@ -75,12 +102,16 @@ def scrape_research_papers(disease, num_papers=50):
             try:
                 # Get next paper
                 paper = next(search_results)
+                # scholarly.pprint(paper)
                 json_output = capture_output_contextlib(scholarly.pprint, paper)
                 # print(json_output[2:-2].replace("'", """\""""))
                 # result = json.dumps(json_output[2:-2].replace('\n', ""))
-                cleaned_json_str = clean_json_string(json_output[2:-2].replace("'", """\""""))
+                cleaned_json_str = clean_json_string(json_output[2:-2])
                 print(cleaned_json_str)
-                result = json.loads("'"+cleaned_json_str+"'")
+                cleaned_json_str = convert_string_to_dict(cleaned_json_str)
+                print(cleaned_json_str)
+                # result = json.loads("'"+cleaned_json_str+"'")
+                result = json.loads(cleaned_json_str)
 
                 # Fill paper details
                 # title = paper.get('title', 'No title available')
