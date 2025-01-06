@@ -33,8 +33,8 @@ def scrape_disease_research(disease_name, num_papers=20):
                 link = paper.get('pub_url', 'No link available')
                 papers_data.append({
                     'Link': link,
-                    'Abstract': abstract
-                    'Title': paper.get('bib', {}).get('title', 'No title available'),
+                    'Abstract': abstract,
+                    'Title': paper.get('bib', {}).get('title', 'No title available')
                 })
             time.sleep(2)
             
