@@ -4,6 +4,14 @@ import pandas as pd
 from tqdm import tqdm
 import time
 import urllib.parse
+import csv
+
+def clean_text(text):
+    # Remove any existing quotes and clean up whitespace
+    text = text.replace('"', "'").strip()
+    # Remove multiple spaces and newlines
+    text = ' '.join(text.split())
+    return f'"{text}"'
 
 def scrape_research_papers(disease, num_pages=2):
     base_url = "https://pubmed.ncbi.nlm.nih.gov/"
@@ -35,8 +43,8 @@ def scrape_research_papers(disease, num_pages=2):
                         abstract = abstract_element.text.strip() if abstract_element else "No abstract available"
                         
                         papers_data.append({
-                            'Title': title,
-                            'Abstract': abstract,
+                            'Title': clean_text(title),
+                            'Abstract': clean_text(abstract),
                             'Link': paper_url
                         })
                         
@@ -46,18 +54,25 @@ def scrape_research_papers(disease, num_pages=2):
                     print(f"Error processing article: {str(e)}")
                     continue
             
-            time.sleep(2)  # Delay between pages
+            time.sleep(3)  # Delay between pages
             
         except Exception as e:
             print(f"Error processing page {page}: {str(e)}")
             continue
 
-    df = pd.DataFrame(papers_data)
+    # Save to CSV with proper quoting
     output_file = f"{disease}_research_pubmed.csv"
-    df.to_csv(output_file, index=False, encoding='utf-8')
+    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['Title', 'Abstract', 'Link'])
+        writer.writeheader()
+        for row in papers_data:
+            writer.writerow(row)
+    
     print(f"\nData saved to {output_file}")
-    return df
+    
+    # Return DataFrame for further processing if needed
+    return pd.DataFrame(papers_data)
 
 if __name__ == "__main__":
     disease = "glioblastoma treatment"
-    df = scrape_research_papers(disease, num_pages=10)
+    df = scrape_research_papers(disease, num_pages=2)
