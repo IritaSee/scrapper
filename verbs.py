@@ -18,14 +18,14 @@ def extract_verbs_after_disease(text, disease, nlp):
         
         for idx in disease_indices:
             # Look at the next 5 tokens after the disease mention
-            end_idx = min(idx + 6, len(sent_doc))
+            end_idx = min(idx + 10, len(sent_doc))
             following_tokens = sent_doc[idx+1:end_idx]
             
             # Find the first verb in the window
             for token in following_tokens:
                 if token.pos_ == "VERB":
                     # Store both the verb and its context
-                    context = sent_doc[max(0, idx-2):min(len(sent_doc), idx+6)].text
+                    context = sent_doc[max(0, idx-2):min(len(sent_doc), idx+10)].text
                     verbs.append({
                         'verb': token.lemma_,
                         'original_form': token.text,
@@ -96,6 +96,7 @@ def process_csv_for_verbs(csv_file, disease_name):
     # Print summary
     print("\nSummary of verbs found:")
     verb_counts = output_df['Verb'].value_counts()
+    verb_counts.to_csv(f"{disease_name}_verb_counts.csv", header=True)
     print(verb_counts.head(10))
     
     return output_df
