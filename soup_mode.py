@@ -61,7 +61,7 @@ def scrape_research_papers(disease, num_pages=2):
             continue
 
     # Save to CSV with proper quoting
-    output_file = f"{disease}_research_pubmed.csv"
+    output_file = f"{disease}_research_pubmed_quoted_{num_pages}.csv"
     with open(output_file, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=['Title', 'Abstract', 'Link'])
         writer.writeheader()
@@ -75,4 +75,4 @@ def scrape_research_papers(disease, num_pages=2):
 
 if __name__ == "__main__":
     disease = "glioblastoma treatment"
-    df = scrape_research_papers(disease, num_pages=2)
+    df = scrape_research_papers(disease, num_pages=10)
