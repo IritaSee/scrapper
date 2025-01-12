@@ -2,6 +2,67 @@ import pandas as pd
 import spacy
 import re
 from tqdm import tqdm
+import networkx as nx
+import matplotlib.pyplot as plt
+
+def visualize_disease_verbs(df, disease_name):
+    """
+    Create a network visualization of verbs connected to the disease.
+    
+    Args:
+        df: DataFrame containing the verb analysis results
+        disease_name: Name of the disease being analyzed
+    """
+    # Create a new graph
+    G = nx.Graph()
+    
+    # Add disease node as central node
+    G.add_node(disease_name, node_type='disease')
+    
+    # Get verb frequencies
+    verb_counts = df['Verb'].value_counts()
+    max_count = verb_counts.max()
+    
+    # Add verb nodes and edges
+    edge_weights = {}
+    for verb, count in verb_counts.items():
+        # Calculate node size based on frequency
+        size = (count / max_count) * 1000 + 100
+        # print(f"{verb}: {count}")
+        G.add_node(verb, node_type='verb', size=size)
+        G.add_edge(disease_name, verb, weight=count)
+        edge_weights[(disease_name, verb)] = count
+    
+    # Set up the plot
+    plt.figure(figsize=(15, 15))
+    
+    # Create the layout
+    pos = nx.spring_layout(G, k=1, iterations=50)
+    
+    # Draw nodes
+    node_colors = ['red' if data['node_type'] == 'disease' else 'lightblue' 
+                  for _, data in G.nodes(data=True)]
+    node_sizes = [1500 if data['node_type'] == 'disease' else data.get('size', 300) 
+                 for _, data in G.nodes(data=True)]
+    
+    nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=node_sizes)
+    nx.draw_networkx_edges(G, pos, alpha=0.2)
+    nx.draw_networkx_labels(G, pos, font_size=6)
+
+    # Add edge labels (occurrence counts)
+    # edge_labels = {(u, v): f'{d["weight"]:.0f}' 
+                #   for (u, v, d) in G.edges(data=True)}
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=6)
+
+    plt.title(f"Verbs associated with {disease_name}")
+    plt.axis('off')
+    
+    # Save the plot
+    output_file = f"{disease_name}_verb_network.png"
+    plt.savefig(output_file, bbox_inches='tight', dpi=300)
+    plt.close()
+    print(f"\nNetwork visualization saved as {output_file}")
+
 
 def extract_verbs_after_disease(text, disease, nlp):
     """Extract verbs that appear after the disease mention within a window."""
@@ -98,6 +159,8 @@ def process_csv_for_verbs(csv_file, disease_name):
     verb_counts = output_df['Verb'].value_counts()
     verb_counts.to_csv(f"{disease_name}_verb_counts.csv", header=True)
     print(verb_counts.head(10))
+
+    visualize_disease_verbs(output_df, disease_name)
     
     return output_df
 
