@@ -5,7 +5,7 @@ from tqdm import tqdm
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def visualize_disease_verbs(df, disease_name):
+def visualize_disease_verbs(df, disease_name, filename):
     """
     Create a network visualization of verbs connected to the disease.
     
@@ -58,7 +58,7 @@ def visualize_disease_verbs(df, disease_name):
     plt.axis('off')
     
     # Save the plot
-    output_file = f"{disease_name}_verb_network.png"
+    output_file = f"{filename}_network.png"
     plt.savefig(output_file, bbox_inches='tight', dpi=300)
     plt.close()
     print(f"\nNetwork visualization saved as {output_file}")
@@ -150,21 +150,24 @@ def process_csv_for_verbs(csv_file, disease_name):
     
     # Create and save the results
     output_df = pd.DataFrame(output_data)
-    output_file = f"{disease_name}_following_verbs.csv"
+    output_file = f"{csv_file}_following_verbs.csv"
     output_df.to_csv(output_file, index=False, encoding='utf-8')
     print(f"\nResults saved to {output_file}")
     
     # Print summary
     print("\nSummary of verbs found:")
+    print(output_df)
     verb_counts = output_df['Verb'].value_counts()
-    verb_counts.to_csv(f"{disease_name}_verb_counts.csv", header=True)
+    
+    # verb_counts = output_df
+    verb_counts.to_csv(f"{csv_file}_verb_counts.csv", header=True)
     print(verb_counts.head(10))
 
-    visualize_disease_verbs(output_df, disease_name)
+    visualize_disease_verbs(output_df, disease_name, csv_file)
     
     return output_df
 
 if __name__ == "__main__":
-    csv_file = "glioblastoma treatment_research_pubmed_quoted_100.csv"  # Your input CSV file
+    csv_file = "glioblastoma invasiveness_research_pubmed_quoted_100.csv"  # Your input CSV file
     disease = "glioblastoma"
     results_df = process_csv_for_verbs(csv_file, disease)
